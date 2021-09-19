@@ -22,14 +22,15 @@ gratingX = 0;
 m = -1;
 linesPerMM = 600;
 d = 1/linesPerMM * 0.001;
+gratingSize = 0.025;
 
 lens1Dist = 0.005;
-lens1Radius = 0.0127;
+lens1Radius = 0.022/2;
 lens1FocalLength = -rayOrigin(1)-lens1Dist;
 
 lens2Angle = abs(diffract(0,m,d,700)+diffract(0,m,d,400))/2;
 lens2Dist = 0.01;
-lens2Radius = 0.0127;
+lens2Radius = 0.0254/2;
 %lens2FocalLength = 0.075;
 lens2FocalLength = 0.03812;
 
@@ -230,8 +231,8 @@ plot(sensorX,sensorY,'k')
 
 xlim manual
 
-plot([gratingX gratingX],[-0.1 0.1],'k:')
-plot([gratingX gratingX+0.2*cos(lens2Angle)],[0 0.2*sin(lens2Angle)],'b:')
+plot([gratingX gratingX],[-gratingSize/2 gratingSize/2],'k:')
+plot([gratingX gratingX+sensorDist*cos(lens2Angle)],[0 sensorDist*sin(lens2Angle)],'b:')
 
 hold off
 %%
