@@ -1,41 +1,57 @@
 clear
+uniform = 1; monte_carlo = 2;
 
 rayOrigin = [-0.055, 0];
-initAngles = deg2rad(linspace(-10,10,500));
+angleMode = monte_carlo;
+angleCount = 100;
+angleSpread = 10;
+
 maxLength = 0.3;
 alpha = 0.02;
 % alpha = 1;
-wavelengths = linspace(400,700,8);
-% balmerResolution = 0.1;
-% wavelengths = [repelem(656.2852,floor(180*balmerResolution)),...
-%                 repelem(656.272,floor(120*balmerResolution)),...
-%                 repelem(486.133,floor(80*balmerResolution)),...
-%                 repelem(434.047,floor(30*balmerResolution)),...
-%                 repelem(410.174,floor(15*balmerResolution))];
+% wavelengths = linspace(400,700,7);
+balmerResolution = 0.4;
+wavelengths = [repelem(656.2852,floor(180*balmerResolution)),...
+                repelem(656.272,floor(120*balmerResolution)),...
+                repelem(486.133,floor(80*balmerResolution)),...
+                repelem(434.047,floor(30*balmerResolution)),...
+                repelem(410.174,floor(15*balmerResolution))];
+noiseFraction = 0.75;
 
 gratingX = 0;
 m = -1;
-linesPerMM = 300;
+linesPerMM = 600;
 d = 1/linesPerMM * 0.001;
 
 lens1Dist = 0.005;
 lens1Radius = 0.0127;
 lens1FocalLength = -rayOrigin(1)-lens1Dist;
 
-lens2Angle = abs(diffract(0,m,d,wavelengths(end))+diffract(0,m,d,wavelengths(1)))/2;
+lens2Angle = abs(diffract(0,m,d,700)+diffract(0,m,d,400))/2;
 lens2Dist = 0.01;
 lens2Radius = 0.0127;
-lens2FocalLength = 0.075;
+%lens2FocalLength = 0.075;
+lens2FocalLength = 0.03812;
 
 sensorAngle = lens2Angle;
 sensorDist = lens2Dist+lens2FocalLength;
 sensorRadius = 0.008/2; % Not really a radius, just half the length
 sensorBins = 1024;
 
+initAngles = deg2rad(linspace(-angleSpread/2,angleSpread/2,angleCount));
 i = 1;
 for lambda = wavelengths
-    for angle = initAngles
-        rays(i).wavelength = lambda;
+    for k = 1:angleCount
+        if angleMode == uniform
+            angle = initAngles(k);
+        else
+            angle = deg2rad((rand*angleSpread)-(angleSpread/2));
+        end
+        if rand > (1-noiseFraction)
+            rays(i).wavelength = rand*(700-400)+400;
+        else
+            rays(i).wavelength = lambda;
+        end
         rays(i).x0 = rayOrigin(1);
         rays(i).y0 = rayOrigin(2);
         rays(i).dx = cos(angle);
@@ -114,7 +130,6 @@ for j = iPreCollimator:iPreGrating-1
     else
         i = i+1;
     end
-    
 end
 
 iPostGrating = i;
@@ -195,6 +210,7 @@ for j = iPostGrating:iPostFocusLens-1
 
 end
 
+%%
 figure(1);
 clf
 xlabel("X Position (m)");
