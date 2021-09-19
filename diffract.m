@@ -3,7 +3,7 @@ if lambda < 1
     warning("diffract() expects lamba in nm, check units")
 end
 
-angle = asind(sinTheta_i-m*lambda*1e-9/d);
+angle = asin(sinTheta_i-m*lambda*1e-9/d);
 
 end
 

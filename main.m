@@ -1,7 +1,7 @@
 clear
 
 rayOrigin = [-0.055, 0];
-initAngles = linspace(-10,10,500);
+initAngles = deg2rad(linspace(-10,10,500));
 maxLength = 0.3;
 alpha = 0.02;
 % alpha = 1;
@@ -38,8 +38,8 @@ for lambda = wavelengths
         rays(i).wavelength = lambda;
         rays(i).x0 = rayOrigin(1);
         rays(i).y0 = rayOrigin(2);
-        rays(i).dx = cosd(angle);
-        rays(i).dy = sind(angle);
+        rays(i).dx = cos(angle);
+        rays(i).dy = sin(angle);
         rays(i).length = maxLength;
         i = i+1;
     end
@@ -105,8 +105,8 @@ for j = iPreCollimator:iPreGrating-1
     rays(i).wavelength = rays(j).wavelength;
     rays(i).x0 = rays(j).x0 + rays(j).length*rays(j).dx;
     rays(i).y0 = rays(j).y0 + rays(j).length*rays(j).dy;
-    rays(i).dx = cosd(newAngle);
-    rays(i).dy = sind(newAngle);
+    rays(i).dx = cos(newAngle);
+    rays(i).dy = sin(newAngle);
     rays(i).length = maxLength;
     
     if imag(rays(i).dx) ~= 0 || imag(rays(i).dy) ~= 0
@@ -121,10 +121,10 @@ iPostGrating = i;
 
 lens2Matrix = [1 0; -1/(lens2FocalLength) 1];
 
-lens2CenterX = gratingX+lens2Dist*cosd(lens2Angle);
-lens2CenterY = lens2Dist*sind(lens2Angle);
-lens2dx = cosd(90-lens2Angle);
-lens2dy = sind(90-lens2Angle);
+lens2CenterX = gratingX+lens2Dist*cos(lens2Angle);
+lens2CenterY = lens2Dist*sin(lens2Angle);
+lens2dx = cos(pi/2-lens2Angle);
+lens2dy = sin(pi/2-lens2Angle);
 lens2X = [lens2CenterX-lens2Radius*lens2dx lens2CenterX+lens2Radius*lens2dx];
 lens2Y = [lens2CenterY+lens2Radius*lens2dy lens2CenterY-lens2Radius*lens2dy];
 
@@ -167,10 +167,10 @@ end
 
 iPostFocusLens = i;
 
-sensorCenterX = gratingX+sensorDist*cosd(sensorAngle);
-sensorCenterY = sensorDist*sind(sensorAngle);
-sensordx = cosd(90-sensorAngle);
-sensordy = sind(90-sensorAngle);
+sensorCenterX = gratingX+sensorDist*cos(sensorAngle);
+sensorCenterY = sensorDist*sin(sensorAngle);
+sensordx = cos(pi/2-sensorAngle);
+sensordy = sin(pi/2-sensorAngle);
 sensorX = [sensorCenterX-sensorRadius*sensordx sensorCenterX+sensorRadius*sensordx];
 sensorY = [sensorCenterY+sensorRadius*sensordy sensorCenterY-sensorRadius*sensordy];
 
@@ -215,7 +215,7 @@ plot(sensorX,sensorY,'k')
 xlim manual
 
 plot([gratingX gratingX],[-0.1 0.1],'k:')
-plot([gratingX gratingX+0.2*cosd(lens2Angle)],[0 0.2*sind(lens2Angle)],'b:')
+plot([gratingX gratingX+0.2*cos(lens2Angle)],[0 0.2*sin(lens2Angle)],'b:')
 
 hold off
 %%
