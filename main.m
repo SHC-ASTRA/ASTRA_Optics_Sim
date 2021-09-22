@@ -1,4 +1,5 @@
 clear
+tic
 uniform = 1; monte_carlo = 2;
 
 rayOrigin = [-0.055, 0];
@@ -17,6 +18,8 @@ wavelengths = [repelem(656.2852,floor(180*balmerResolution)),...
                 repelem(434.047,floor(30*balmerResolution)),...
                 repelem(410.174,floor(15*balmerResolution))];
 noiseFraction = 0.75;
+
+numRays = angleCount*numel(wavelengths)
 
 gratingX = 0;
 m = -1;
@@ -252,3 +255,4 @@ b.CData = colors;
 xlabel("Sensor Pixel");
 ylabel("Rays Hitting Pixel");
 xlim([0,sensorBins]);
+toc
