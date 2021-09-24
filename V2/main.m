@@ -1,6 +1,6 @@
 tic
 maxPlotRays = 10000;
-[RayVec,Lambdas] = initializeRays(10000000, [-0.01,0.01], deg2rad([-20,20]), [380,700]);
+[RayVec,Lambdas] = initializeRays(10000000, [-0.01,0.01], deg2rad([-10,10]), [380,700]);
 
 focalLength = 50;
 focalLength2 = 50;
@@ -13,9 +13,9 @@ FreeSpace3TransferMatrix = [1 postLensFreeSpaceLength; 0 1];
 Lens2TransferMatrix = [1 0; -1/focalLength2 1];
 FreeSpace4TransferMatrix = [1 focalLength2; 0 1];
 
-RayVec2 = FreeSpaceTransferMatrix*RayVec;
+RayVec2 = [RayVec(1,:)+tan(RayVec(2,:))*preLensFreeSpaceLength; RayVec(2,:)];
 RayVec3 = Lens1TransferMatrix*RayVec2;
-RayVec4 = FreeSpace2TransferMatrix*RayVec3;
+RayVec4 = [RayVec3(1,:)+tan(RayVec3(2,:))*postLensFreeSpaceLength; RayVec3(2,:)];
 
 m = -1;%randi([-1,1],1,size(RayVec,2));
 linesPerMM = 600;
@@ -23,9 +23,9 @@ d = 1/linesPerMM * 0.001;
 
 angles = asin(sin(RayVec4(2,:))-m.*Lambdas*1e-9/d);
 RayVec5 = [RayVec4(1,:);angles];
-RayVec6 = FreeSpace3TransferMatrix*RayVec5;
+RayVec6 = [RayVec5(1,:)+tan(RayVec5(2,:))*postLensFreeSpaceLength; RayVec5(2,:)];
 RayVec7 = Lens2TransferMatrix*RayVec6;
-RayVec8 = FreeSpace4TransferMatrix*RayVec7;
+RayVec8 = [RayVec7(1,:)+tan(RayVec7(2,:))*focalLength2; RayVec7(2,:)];
 toc
 
 PlotY = RayVecToPlotForm(RayVec);
