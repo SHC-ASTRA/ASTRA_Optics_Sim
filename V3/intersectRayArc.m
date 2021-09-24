@@ -1,8 +1,10 @@
-function [HitPos,NormalVec] = intersectRayArc(RayPos,RayVec,ArcPos,ArcRad,ArcRange)
+function [HitPos,NormalVec] = intersectRayArc(RayPos,RayVec,ArcPos,ArcRad,StartVec,EndVec)
 A = RayPos;
 B = RayVec;
 C = ArcPos;
 r = ArcRad;
+
+numRays = size(RayPos,2);
 
 a = dot(B,B);
 b = 2*dot(B,A-C);
@@ -21,13 +23,9 @@ HitPos(:,~solExists) = NaN;
 NormalVec = HitPos-ArcPos;
 NormalVec = NormalVec./vecnorm(NormalVec);
 
-HitAngle = atan2(NormalVec(2,:),NormalVec(1,:));
-
-if ArcRange(1) < ArcRange(2)
-    inRange = HitAngle<ArcRange(1) | HitAngle>ArcRange(2);
-else
-    inRange = HitAngle>ArcRange(1) & HitAngle<ArcRange(2);
-end
+cross1 = cross(repelem(gpuArray([StartVec;0]),1,numRays),[NormalVec;zeros(1,numRays)]);
+cross2 = cross([NormalVec;zeros(1,numRays)],repelem(gpuArray([EndVec;0]),1,numRays));
+inRange = sign(cross1(3,:)) == sign(cross2(3,:));
 
 HitPos(:,~inRange) = NaN;
 NormalVec(:,~inRange) = NaN;
