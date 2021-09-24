@@ -6,13 +6,16 @@ classdef PlanoConvexLens < OpticalElement
         radius
         width
         thickness
+        curvedFirst
     end
     
     methods
-        function obj = PlanoConvexLens(inputArg1,inputArg2)
-            %PLANOCONVEXLENS Construct an instance of this class
-            %   Detailed explanation goes here
-            obj.Property1 = inputArg1 + inputArg2;
+        function obj = PlanoConvexLens(Position,Rotation,radius,width,thickness,curvedFirst)
+            obj@OpticalElement(Position,Rotation);
+            obj.radius = radius;
+            obj.width = width;
+            obj.thickness = thickness;
+            obj.curvedFirst = curvedFirst;
         end
         
         function outputArg = method1(obj,inputArg)
