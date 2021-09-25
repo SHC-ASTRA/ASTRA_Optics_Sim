@@ -14,14 +14,18 @@ d = b.^2-4.*a.*c;
 
 solExists = d>=0;
 
-t = ((-b-sqrt(max(d,0)))./(2.*a));
+t_1 = ((-b-sqrt(max(d,0)))./(2.*a));
+t_2 = ((-b+sqrt(max(d,0)))./(2.*a));
 
-HitPos = A+t.*B;
+inside = vecnorm(RayPos-ArcPos) <= ArcRad;
+
+HitPos = A + t_1.*B.*~inside + t_2.*B.*inside;
 
 HitPos(:,~solExists) = NaN;
 
 NormalVec = HitPos-ArcPos;
 NormalVec = NormalVec./vecnorm(NormalVec);
+NormalVec(:,inside) = -NormalVec(:,inside);
 
 cross1 = cross(repelem(gpuArray([StartVec;0]),1,numRays),[NormalVec;zeros(1,numRays)]);
 cross2 = cross([NormalVec;zeros(1,numRays)],repelem(gpuArray([EndVec;0]),1,numRays));

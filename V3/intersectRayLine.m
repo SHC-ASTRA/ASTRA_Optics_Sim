@@ -1,18 +1,18 @@
 function [HitPos,NormalVec] = intersectRayLine(RayPos,RayVec,StartPos,EndPos)
+% N = number of rays
+p = RayPos; % 2xN
+r = RayVec; % 2xN
+q = StartPos; % 2x1
+s = (EndPos-StartPos)./vecnorm(EndPos-StartPos); % 2x1
+uEnd = vecnorm(EndPos-StartPos); % scalar
 
-p = RayPos;
-r = RayVec;
-q = StartPos;
-s = (EndPos-StartPos)./vecnorm(EndPos-StartPos);
-uEnd = vecnorm(EndPos-StartPos);
+t = cross2((q-p),s)./cross2(r,s); % 1xN
+u = cross2((q-p),r)./cross2(r,s); % 1xN
 
-t = cross2((q-p),s)./cross2(r,s);
-u = cross2((q-p),r)./cross2(r,s);
+HitPos = p + t.*r; % 2xN
+NormalVec = repelem(gpuArray([s(2,:);-s(1,:)]),1,size(RayPos,2)); % 2xN
 
-HitPos = p + t.*r;
-NormalVec = repelem(gpuArray([s(2,:);-s(1,:)]),1,size(RayPos,2));
-
-inRange = u>=0 & u <=uEnd;
+inRange = u>=0 & u <=uEnd; %1xN boolean
 HitPos(:,~inRange) = NaN;
 NormalVec(:,~inRange) = NaN;
 

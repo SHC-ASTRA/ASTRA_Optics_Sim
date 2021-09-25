@@ -62,11 +62,11 @@ classdef PlanoConvexLens < OpticalElement
                 FromVec = obj.PointingVec*(-L) + obj.TangentVec*(obj.width/2);
                 ToVec = obj.PointingVec*(-L) - obj.TangentVec*(obj.width/2);
                 [RayPos,NormalVec] = intersectRayArc(RayPos,RayVec,Center,obj.radius,FromVec,ToVec);
-                %PlotX(end+1,:) = RayPos(1,:);
-                %PlotY(end+1,:) = RayPos(2,:);
+                PlotX(end+1,:) = RayPos(1,:);
+                PlotY(end+1,:) = RayPos(2,:);
                 
                 mu = obj.n_medium_func(Lambda)./obj.n_air_func(Lambda);
-                TransmittedVec = calcSnellsLaw(RayVec,-NormalVec,mu);
+                TransmittedVec = calcSnellsLaw(RayVec,NormalVec,mu);
                 RayVec = TransmittedVec;
             end
         end
