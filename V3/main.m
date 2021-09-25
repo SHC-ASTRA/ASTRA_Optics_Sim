@@ -2,9 +2,8 @@ tic
 maxPlotRays = 1000;
 doplot = true;
 
-gpurng(100)
 
-[RayPos,RayVec,Lambda] = initializeRays(500000, [0,0], [-0.010,0.010], deg2rad([-10,10]), [400,700], 0, 2);
+[RayPos,RayVec,Lambda] = initializeRays(10000000, [0,0], [-0.010,0.010], deg2rad([-10,10]), [400,700], 0.75, 1);
 PlotX = [];
 PlotY = [];
 
@@ -41,9 +40,6 @@ PlotY(end+1,:) = RayPos(2,:);
 [RayPos,RayVec,PlotX,PlotY] = grating1.ApplyElement(RayPos,RayVec,Lambda,PlotX,PlotY);
 [RayPos,RayVec,PlotX,PlotY] = lens2.ApplyElement(RayPos,RayVec,Lambda,PlotX,PlotY);
 [RayPos,RayVec,PlotX,PlotY,sensor_hits] = detector.ApplyElement(RayPos,RayVec,Lambda,PlotX,PlotY);
-
-% PlotX(end+1,:) = RayPos(1,:)+RayVec(1,:)*40;
-% PlotY(end+1,:) = RayPos(2,:)+RayVec(2,:)*40;
 
 if doplot
     disp("Calc time: "+toc+" s"); tic;
