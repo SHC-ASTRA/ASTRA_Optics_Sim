@@ -1,4 +1,4 @@
-function [HitPos,NormalVec] = intersectRayLine(RayPos,RayVec,StartPos,EndPos)
+function [HitPos,NormalVec,u] = intersectRayLine(RayPos,RayVec,StartPos,EndPos)
 % N = number of rays
 p = RayPos; % 2xN
 r = RayVec; % 2xN
@@ -15,6 +15,7 @@ NormalVec = repelem(gpuArray([s(2,:);-s(1,:)]),1,size(RayPos,2)); % 2xN
 inRange = u>=0 & u <=uEnd; %1xN boolean
 HitPos(:,~inRange) = NaN;
 NormalVec(:,~inRange) = NaN;
+u(~inRange) = NaN;
 
 end
 
