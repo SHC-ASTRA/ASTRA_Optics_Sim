@@ -58,15 +58,12 @@ detector = OpticalDetector(gratingPos+(detectorDistFromGratingCenter)*[cos(diffr
 
 %% Setup Sim
 [RayPos,RayVec,Lambda] = initializeRays(maxTracedRays, [0,0], [-slitWidth/2,slitWidth/2], deg2rad([-10,10]), [minLambda,maxLambda], 0.25, 1);
-PlotX = [];
-PlotY = [];
+PlotX(1,:) = RayPos(1,:);
+PlotY(1,:) = RayPos(2,:);
 
 if doplot
     disp("Init time: "+toc+" s"); tic;
 end
-
-PlotX(end+1,:) = RayPos(1,:);
-PlotY(end+1,:) = RayPos(2,:);
 
 %% Do Sim
 [RayPos,RayVec,PlotX,PlotY] = lens1.ApplyElement(RayPos,RayVec,Lambda,PlotX,PlotY);

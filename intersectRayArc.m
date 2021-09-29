@@ -27,9 +27,9 @@ NormalVec = HitPos-ArcPos;
 NormalVec = NormalVec./vecnorm(NormalVec);
 NormalVec(:,inside) = -NormalVec(:,inside);
 
-cross1 = cross(repelem(gpuArray([StartVec;0]),1,numRays),[NormalVec;zeros(1,numRays)]);
-cross2 = cross([NormalVec;zeros(1,numRays)],repelem(gpuArray([EndVec;0]),1,numRays));
-inRange = sign(cross1(3,:)) == sign(cross2(3,:));
+crossp1 = cross2(repelem(gpuArray(StartVec),1,numRays),NormalVec);
+crossp2 = cross2(NormalVec,repelem(gpuArray(EndVec),1,numRays));
+inRange = sign(crossp1) == sign(crossp2);
 
 HitPos(:,~inRange) = NaN;
 NormalVec(:,~inRange) = NaN;
