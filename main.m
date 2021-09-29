@@ -1,258 +1,135 @@
 clear
 tic
-uniform = 1; monte_carlo = 2;
 
-rayOrigin = [-0.055, 0];
-angleMode = monte_carlo;
-angleCount = 100;
-angleSpread = 10;
+%% Program Settings
 
-maxLength = 0.3;
-alpha = 0.02;
-% alpha = 1;
-% wavelengths = linspace(400,700,7);
-balmerResolution = 0.4;
-wavelengths = [repelem(656.2852,floor(180*balmerResolution)),...
-                repelem(656.272,floor(120*balmerResolution)),...
-                repelem(486.133,floor(80*balmerResolution)),...
-                repelem(434.047,floor(30*balmerResolution)),...
-                repelem(410.174,floor(15*balmerResolution))];
-noiseFraction = 0.75;
+maxTracedRays = 10000000; % Maximum number of rays to trace (usually between 10,000 and 10,000,000)
+maxPlotRays = 250; % Maximum number of rays to plot (usually between 100 and 25,000)
+doplot = true; % Setting this to false supresses all output
 
-numRays = angleCount*numel(wavelengths)
 
-gratingX = 0;
-m = -1;
-linesPerMM = 600;
-d = 1/linesPerMM * 0.001;
-gratingSize = 0.025;
+%% Design (units are mm and radians)
 
-lens1Dist = 0.005;
-lens1Radius = 0.022/2;
-lens1FocalLength = -rayOrigin(1)-lens1Dist;
+minLambda = 400; %Minimum design/sim wavelength
+maxLambda = 700; %Maximum design/sim wavelength
 
-lens2Angle = abs(diffract(0,m,d,700)+diffract(0,m,d,400))/2;
-lens2Dist = 0.01;
-lens2Radius = 0.0254/2;
-%lens2FocalLength = 0.075;
-lens2FocalLength = 0.03812;
+gratingLinesPerMM = 600; %Grating Lines
 
-sensorAngle = lens2Angle;
-sensorDist = lens2Dist+lens2FocalLength;
-sensorRadius = 0.008/2; % Not really a radius, just half the length
-sensorBins = 1024;
+%Angle of post-grating optical centerline
+diffractAngle = abs(diffract(0,-1,1/gratingLinesPerMM * 0.001,maxLambda)+diffract(0,-1,1/gratingLinesPerMM * 0.001,minLambda))/2;
 
-initAngles = deg2rad(linspace(-angleSpread/2,angleSpread/2,angleCount));
-i = 1;
-for lambda = wavelengths
-    for k = 1:angleCount
-        if angleMode == uniform
-            angle = initAngles(k);
-        else
-            angle = deg2rad((rand*angleSpread)-(angleSpread/2));
-        end
-        if rand > (1-noiseFraction)
-            rays(i).wavelength = rand*(700-400)+400;
-        else
-            rays(i).wavelength = lambda;
-        end
-        rays(i).x0 = rayOrigin(1);
-        rays(i).y0 = rayOrigin(2);
-        rays(i).dx = cos(angle);
-        rays(i).dy = sin(angle);
-        rays(i).length = maxLength;
-        i = i+1;
+%Slit dimensions
+slitWidth = 0.01;
+
+%Lens 1 dimensions
+lens1Radius = 25.8;
+lens1Width = 20;
+lens1Thickness = 4;
+lens1BFL = 47.4;
+%Lens 1 position
+lens1DistFromSlit = lens1BFL;
+
+%Grating dimensions
+gratingWidth = 25;
+gratingThickness = 3;
+%Grating position
+gratingPos = [57;0];
+
+%Lens 2 dimensions
+lens2Radius = 19.7;
+lens2Width = 25.4;
+lens2Thickness = 6.6;
+lens2BFL = 38.12;
+%Lens 2 position
+lens2DistFromGratingCenter = 10;
+
+%Detector dimensions
+detectorPixels = 1024;
+detectorWidth = 8;
+%Detector position
+detectoroffang = deg2rad(-20);
+detectorDistFromGratingCenter = lens2DistFromGratingCenter+lens2BFL-5.3;
+
+%% Create Elements
+lens1 = PlanoConvexLens([lens1DistFromSlit;0],[-1;0],lens1Radius,lens1Width,lens1Thickness,false,@nbk7RefractiveIndex,@airRefractiveIndex);
+lens2 = PlanoConvexLens(gratingPos+lens2DistFromGratingCenter*[cos(diffractAngle);sin(diffractAngle)],[cos(pi+diffractAngle);sin(pi+diffractAngle)],lens2Radius,lens2Width,lens2Thickness,true,@nbk7RefractiveIndex,@airRefractiveIndex);
+grating1 = GratingOnSubtstrate(gratingPos,[-1;0],gratingLinesPerMM,-1,gratingWidth,gratingThickness,false,@b270RefractiveIndex,@airRefractiveIndex);
+detector = OpticalDetector(gratingPos+(detectorDistFromGratingCenter)*[cos(diffractAngle);sin(diffractAngle)],[cos(pi+diffractAngle+detectoroffang);sin(pi+diffractAngle+detectoroffang)],detectorWidth,detectorPixels);
+
+%% Setup Sim
+[RayPos,RayVec,Lambda] = initializeRays(maxTracedRays, [0,0], [-slitWidth/2,slitWidth/2], deg2rad([-10,10]), [minLambda,maxLambda], 0.25, 1);
+PlotX = [];
+PlotY = [];
+
+if doplot
+    disp("Init time: "+toc+" s"); tic;
+end
+
+PlotX(end+1,:) = RayPos(1,:);
+PlotY(end+1,:) = RayPos(2,:);
+
+%% Do Sim
+[RayPos,RayVec,PlotX,PlotY] = lens1.ApplyElement(RayPos,RayVec,Lambda,PlotX,PlotY);
+[RayPos,RayVec,PlotX,PlotY] = grating1.ApplyElement(RayPos,RayVec,Lambda,PlotX,PlotY);
+[RayPos,RayVec,PlotX,PlotY] = lens2.ApplyElement(RayPos,RayVec,Lambda,PlotX,PlotY);
+[RayPos,RayVec,PlotX,PlotY,sensor_hits] = detector.ApplyElement(RayPos,RayVec,Lambda,PlotX,PlotY);
+
+%% Output Results
+if doplot
+    disp("Calc time: "+toc+" s"); tic;
+    
+    numRays = size(PlotX,2);
+    period = numRays/maxPlotRays;
+    if period > 1
+        period = round(period);
+        PlotX = PlotX(:,1:period:end);
+        PlotY = PlotY(:,1:period:end);
+        PlotLambdas = Lambda(:,1:period:end);
     end
+    
+    colors = gather(wavelengthToRGB(PlotLambdas));
+    colors = [colors, repelem(0.02*(2500/maxPlotRays),size(colors,1))'];
+    figure(1);
+    hold off
+    plot(0,0,"k+");
+        
+
+    hold on
+    h = plot(PlotX,PlotY);
+    set(h, {'color'}, num2cell(colors,2));
+    axis equal
+    xlim([-5 105])
+    
+    xlabel("X (mm)");
+    ylabel("Y (mm)");
+    title("Visualization of "+((maxPlotRays/maxTracedRays)*100)+"% of Traced Rays");
+    
+    
+    lens1.plotElement();
+    grating1.plotElement();
+    lens2.plotElement();
+    detector.plotElement();
+    
+    disp("Plot time: "+toc+" s"); tic;
 end
 
-iPreCollimator = i;
+[sensorData,~,bin] = histcounts(sensor_hits,linspace(0,detectorWidth,detectorPixels+1));
 
-lens1Matrix = [1 0; -1/(lens1FocalLength) 1];
-
-
-lens1CenterX = -lens1Dist;
-lens1CenterY = 0;
-lens1Angle = 0;
-lens1dx = 0;
-lens1dy = 1;
-lens1X = [lens1CenterX-lens1Radius*lens1dx lens1CenterX+lens1Radius*lens1dx];
-lens1Y = [lens1CenterY+lens1Radius*lens1dy lens1CenterY-lens1Radius*lens1dy];
-
-for j = 1:iPreCollimator-1
-    
-    rayx1 = [rays(j).x0 rays(j).x0+rays(j).dx*rays(j).length];
-    rayy1 = [rays(j).y0 rays(j).y0+rays(j).dy*rays(j).length];
-    
-    [xi,yi] = polyxpoly(rayx1,rayy1,lens1X,lens1Y);
-    
-    if ~isempty(xi)
-        rays(j).length = sqrt((rays(j).x0-xi)^2 + (rays(j).y0-yi)^2);
-        
-        x1=(sqrt((lens1CenterX-xi)^2 + (lens1CenterY-yi)^2) * -sign(yi-lens1CenterY));
-        rayAngle = atan2(rays(j).dy,rays(j).dx);
-        theta = -(rayAngle-lens1Angle);
-        %theta = deg2rad(theta);
-        
-        rayVec = [x1;theta];
-        
-        outgoingVec = lens1Matrix*rayVec;
-        
-        x2 = outgoingVec(1);
-        theta2 = -outgoingVec(2);
-        
-        newAngle = lens1Angle+theta2;
-        
-        rays(i).wavelength = rays(j).wavelength;
-        rays(i).x0 = lens1CenterX+lens1dx*x2;
-        rays(i).y0 = lens1CenterY-lens1dy*x2;
-        rays(i).dx = cos(newAngle);
-        rays(i).dy = sin(newAngle);
-        rays(i).length = maxLength;
-        
-        i = i+1;
+if doplot
+    figure(2);
+    hold off
+    b = bar(sensorData, 1, 'facecolor', 'flat');
+    colors2 = zeros(detectorPixels,3);
+    fullColors = wavelengthToRGB(Lambda);
+    for i = 1:detectorPixels
+        binNums = bin == i;
+        binColors = fullColors(binNums,:);
+        colors2(i,:) = sum(binColors,1)/size(binColors,1);
     end
-
+    b.CData = colors2;
+    xlabel("Sensor Pixel");
+    ylabel("Rays Hitting Pixel");
+    title("Simulated Sensor Output");
+    xlim([0,detectorPixels]);
+    disp("Hist time: "+toc+" s"); tic;
 end
-
-iPreGrating = i;
-
-for j = iPreCollimator:iPreGrating-1
-    
-    rays(j).length = (gratingX - rays(j).x0)/rays(j).dx;
-    
-    newAngle = diffract(rays(j).dy,m,d,rays(j).wavelength);
-    
-    rays(i).wavelength = rays(j).wavelength;
-    rays(i).x0 = rays(j).x0 + rays(j).length*rays(j).dx;
-    rays(i).y0 = rays(j).y0 + rays(j).length*rays(j).dy;
-    rays(i).dx = cos(newAngle);
-    rays(i).dy = sin(newAngle);
-    rays(i).length = maxLength;
-    
-    if imag(rays(i).dx) ~= 0 || imag(rays(i).dy) ~= 0
-        rays(i) = [];
-    else
-        i = i+1;
-    end
-end
-
-iPostGrating = i;
-
-lens2Matrix = [1 0; -1/(lens2FocalLength) 1];
-
-lens2CenterX = gratingX+lens2Dist*cos(lens2Angle);
-lens2CenterY = lens2Dist*sin(lens2Angle);
-lens2dx = cos(pi/2-lens2Angle);
-lens2dy = sin(pi/2-lens2Angle);
-lens2X = [lens2CenterX-lens2Radius*lens2dx lens2CenterX+lens2Radius*lens2dx];
-lens2Y = [lens2CenterY+lens2Radius*lens2dy lens2CenterY-lens2Radius*lens2dy];
-
-
-for j = iPreGrating:iPostGrating-1
-    
-    rayx1 = [rays(j).x0 rays(j).x0+rays(j).dx*rays(j).length];
-    rayy1 = [rays(j).y0 rays(j).y0+rays(j).dy*rays(j).length];
-    
-    [xi,yi] = polyxpoly(rayx1,rayy1,lens2X,lens2Y);
-    
-    if ~isempty(xi)
-         rays(j).length = sqrt((rays(j).x0-xi)^2 + (rays(j).y0-yi)^2);
-        
-        x1=(sqrt((lens2CenterX-xi)^2 + (lens2CenterY-yi)^2) * -sign(yi-lens2CenterY));
-        rayAngle = atan2(rays(j).dy,rays(j).dx);
-        theta = -(rayAngle-lens2Angle);
-        %theta = deg2rad(theta);
-        
-        rayVec = [x1;theta];
-        
-        outgoingVec = lens2Matrix*rayVec;
-        
-        x2 = outgoingVec(1);
-        theta2 = -outgoingVec(2);
-        
-        newAngle = lens2Angle+theta2;
-        
-        rays(i).wavelength = rays(j).wavelength;
-        rays(i).x0 = lens2CenterX+lens2dx*x2;
-        rays(i).y0 = lens2CenterY-lens2dy*x2;
-        rays(i).dx = cos(newAngle);
-        rays(i).dy = sin(newAngle);
-        rays(i).length = maxLength;
-        
-        i = i+1;
-    end
-
-end
-
-iPostFocusLens = i;
-
-sensorCenterX = gratingX+sensorDist*cos(sensorAngle);
-sensorCenterY = sensorDist*sin(sensorAngle);
-sensordx = cos(pi/2-sensorAngle);
-sensordy = sin(pi/2-sensorAngle);
-sensorX = [sensorCenterX-sensorRadius*sensordx sensorCenterX+sensorRadius*sensordx];
-sensorY = [sensorCenterY+sensorRadius*sensordy sensorCenterY-sensorRadius*sensordy];
-
-sensorHitsLambda = [];
-sensorHitsX = [];
-
-for j = iPostGrating:iPostFocusLens-1
-    
-    rayx1 = [rays(j).x0 rays(j).x0+rays(j).dx*rays(j).length];
-    rayy1 = [rays(j).y0 rays(j).y0+rays(j).dy*rays(j).length];
-    
-    [xi,yi] = polyxpoly(rayx1,rayy1,sensorX,sensorY);
-    
-    if ~isempty(xi)
-         rays(j).length = sqrt((rays(j).x0-xi)^2 + (rays(j).y0-yi)^2);
-        
-        x1=(sqrt((sensorCenterX-xi)^2 + (sensorCenterY-yi)^2) * -sign(yi-sensorCenterY));
-        sensorHitsLambda(end+1) = rays(j).wavelength;
-        sensorHitsX(end+1) = x1;
-        
-    end
-
-end
-
-%%
-figure(1);
-clf
-xlabel("X Position (m)");
-ylabel("Y Position (m)");
-hold on
-rays = rays(randperm(length(rays)));
-for ray = rays
-    [rgb, style] = wavelengthToRGB(ray.wavelength);
-    rgba = [rgb, alpha];
-    plot([ray.x0 ray.x0+ray.dx*ray.length], [ray.y0 ray.y0+ray.dy*ray.length],style, 'Color',rgba)
-end
-axis equal
-
-plot(lens1X,lens1Y,'b')
-plot(lens2X,lens2Y,'b')
-plot(sensorX,sensorY,'k')
-
-xlim manual
-
-plot([gratingX gratingX],[-gratingSize/2 gratingSize/2],'k:')
-plot([gratingX gratingX+sensorDist*cos(lens2Angle)],[0 sensorDist*sin(lens2Angle)],'b:')
-
-hold off
-%%
-figure(2);
-clf
-[sensorData,~,bin] = histcounts(sensorHitsX,linspace(-sensorRadius,sensorRadius,sensorBins+1));
-b = bar(sensorData, 1, 'facecolor', 'flat');
-colors = zeros(sensorBins,3);
-binColorCounts = zeros(sensorBins,1);
-for i = 1:numel(sensorHitsLambda)
-    binNum = bin(i);
-    colors(binNum,:) = colors(binNum,:) + wavelengthToRGB(sensorHitsLambda(i));
-    binColorCounts(binNum) = binColorCounts(binNum)+1;
-end
-colors = colors./binColorCounts;
-b.CData = colors;
-xlabel("Sensor Pixel");
-ylabel("Rays Hitting Pixel");
-xlim([0,sensorBins]);
-toc
