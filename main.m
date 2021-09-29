@@ -4,7 +4,7 @@ tic
 %% Program Settings
 
 maxTracedRays = 10000000; % Maximum number of rays to trace (usually between 10,000 and 10,000,000)
-maxPlotRays = 250; % Maximum number of rays to plot (usually between 100 and 25,000)
+maxPlotRays = 2500; % Maximum number of rays to plot (usually between 100 and 25,000)
 doplot = true; % Setting this to false supresses all output
 
 
